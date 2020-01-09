@@ -40,12 +40,16 @@ im1d = im1[0:200, 525:725]
 im4d = im4[0:200, 525:725]
 
 
-hough_radii = np.arange(10, 100, 2)
+hough_radii = np.arange(30, 50, 2)
 hough_res = hough_circle(im4a, hough_radii)
 
 # Select the most prominent 3 circles
 accums, cx, cy, radii = hough_circle_peaks(hough_res, hough_radii,
-                                           total_num_peaks=5)
+                                           num_peaks=1,
+                                           total_num_peaks=10,
+                                           min_xdistance=20,
+                                           min_ydistance=20,
+                                           normalize=True)
 # Draw them
 for center_y, center_x, radius in zip(cy, cx, radii):
     circy, circx = circle_perimeter(center_y, center_x, radius,
