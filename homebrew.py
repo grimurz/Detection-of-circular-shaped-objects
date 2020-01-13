@@ -78,7 +78,7 @@ def get_cropped_circle(x,y,r,rp,im):
 # double trouble: 21 & 35
 # junk inside: 3,17,23,24,27,31
 # interesting: 10,14,16,21,29,34!
-i = 35
+i = 34
 crop_im = get_cropped_circle(circles[0][i][0],circles[0][i][1],circles[0][i][2],1.1,binim)
 
 
@@ -177,9 +177,17 @@ for i,loc in enumerate(pxl_loc):
 (h, w) = f_im.shape[:2]
 # calculate the center of the image
 center = (w / 2, h / 2)
-
 M = cv2.getRotationMatrix2D(center, 90, scale)
 f_im_90 = cv2.warpAffine(f_im, M, (h, w))
+
+
+
+# Dilate that shiz
+#kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
+#kernel = np.concatenate((np.zeros((2,7),np.uint8), np.ones((3,7),np.uint8), (np.zeros((2,7),np.uint8))))
+kernel = np.concatenate((np.zeros((1,5),np.uint8), np.ones((3,5),np.uint8), (np.zeros((1,5),np.uint8))))
+f_im_90 = cv2.dilate(f_im_90,kernel,iterations = 1)
+
 
 
 
@@ -188,6 +196,12 @@ f_im_90 = cv2.warpAffine(f_im, M, (h, w))
 img = crop_im.astype(np.float32)
 Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
 cartisian_image = cv2.linearPolar(f_im_90, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
+
+
+
+## Dilate that shiz
+#kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
+#cartisian_image = cv2.dilate(cartisian_image,kernel,iterations = 1)
 
 
 
@@ -223,7 +237,7 @@ ax[1].imshow(polar_image, cmap=plt.cm.gray)
 ax[2].imshow(polar_image90, cmap=plt.cm.gray)
 #ax[3].imshow(top_pixels, cmap=plt.cm.gray)
 ax[3].imshow(top_pixels)
-ax[4].imshow(f_im, cmap=plt.cm.gray)
+ax[4].imshow(f_im_90, cmap=plt.cm.gray)
 ax[5].imshow(cartisian_image, cmap=plt.cm.gray)
 
 fig.tight_layout()
