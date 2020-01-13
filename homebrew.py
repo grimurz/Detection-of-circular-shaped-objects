@@ -74,10 +74,10 @@ def get_cropped_circle(x,y,r,rp,im):
 # overlapping bottom:  
 # overlapping unclear:  
 # clean:  
-# deformed: 21,27,35,40,79
+# deformed: 21,27,29,35,40,79
 # double trouble: 21 & 35
 # junk inside: 3,17,23,24,27,31
-# interesting: 34
+# interesting: 10,14,16,21,29,34!
 i = 35
 crop_im = get_cropped_circle(circles[0][i][0],circles[0][i][1],circles[0][i][2],1.1,binim)
 
@@ -164,10 +164,38 @@ f = np.poly1d(z)
 
 # Add polyfit to top_pixels
 f_pts = np.zeros(len(pxl_loc))
-
+f_im = np.zeros(polar_image90.shape, np.uint8)
 for i,loc in enumerate(pxl_loc):
     top_pixels[int(f(i))][i] = 120
     f_pts[i] = int(f(i))
+    f_im[int(f(i))][i] = 255
+
+
+
+# Rotate image!
+# get image height, width
+(h, w) = f_im.shape[:2]
+# calculate the center of the image
+center = (w / 2, h / 2)
+
+M = cv2.getRotationMatrix2D(center, 90, scale)
+f_im_90 = cv2.warpAffine(f_im, M, (h, w))
+
+
+
+# Polar to cartisian
+#img = f_im_90.astype(np.float32)
+img = crop_im.astype(np.float32)
+Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+cartisian_image = cv2.linearPolar(f_im_90, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
+
+
+
+# Add cartisian to original image
+crop_im2 = crop_im + cartisian_image*0.6
+
+
+
 
 
 
@@ -187,7 +215,7 @@ plt.show()
 
 
 
-fig, axes = plt.subplots(2, 2, figsize=(10, 10))
+fig, axes = plt.subplots(3, 2, figsize=(15, 15))
 ax = axes.ravel()
 
 ax[0].imshow(crop_im, cmap=plt.cm.gray)
@@ -195,10 +223,16 @@ ax[1].imshow(polar_image, cmap=plt.cm.gray)
 ax[2].imshow(polar_image90, cmap=plt.cm.gray)
 #ax[3].imshow(top_pixels, cmap=plt.cm.gray)
 ax[3].imshow(top_pixels)
+ax[4].imshow(f_im, cmap=plt.cm.gray)
+ax[5].imshow(cartisian_image, cmap=plt.cm.gray)
 
 fig.tight_layout()
 plt.show()
 
+
+fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
+ax.imshow(crop_im2)
+plt.show()
 
 
 #t = range(crop_len)
