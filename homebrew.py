@@ -78,7 +78,7 @@ def get_cropped_circle(x,y,r,rp,im):
 # double trouble: 21 & 35
 # junk inside: 3,17,23,24,27,31
 # interesting: 10,14,16,21,29,34!
-i = 34
+i = 1
 crop_im = get_cropped_circle(circles[0][i][0],circles[0][i][1],circles[0][i][2],1.1,binim)
 
 
@@ -123,37 +123,44 @@ for i in range(crop_len):
 
 
 
-# Get rid of zeros, use median of x non-zero neighbour values
-for i in range(crop_len):
 
-    if pxl_loc[i] == 0:
-        
-        stack = []
-        l_stack = []
-        r_stack = []
-        x = 4
-        
-        left_itr = i-1
-        while left_itr >= 0 and len(l_stack) < x:
-            if pxl_loc[left_itr] != 0:
-                l_stack.append(pxl_loc[left_itr])
-            left_itr -= 1
-        
-        right_itr = i+1
-        while right_itr <= crop_len-1 and len(r_stack) < x:
-            if pxl_loc[right_itr] != 0:
-                r_stack.append(pxl_loc[right_itr])
-            right_itr += 1
+# try because of messed up edge cases
+try:
+    
+    # Get rid of zeros, use median of x non-zero neighbour values
+    for i in range(crop_len):
+    
+        if pxl_loc[i] == 0:
+            
+            stack = []
+            l_stack = []
+            r_stack = []
+            x = 4
+            
+            left_itr = i-1
+            while left_itr >= 0 and len(l_stack) < x:
+                if pxl_loc[left_itr] != 0:
+                    l_stack.append(pxl_loc[left_itr])
+                left_itr -= 1
+            
+            right_itr = i+1
+            while right_itr <= crop_len-1 and len(r_stack) < x:
+                if pxl_loc[right_itr] != 0:
+                    r_stack.append(pxl_loc[right_itr])
+                right_itr += 1
+    
+            while len(stack) < x and (l_stack or r_stack):
+                if len(l_stack) > 0:
+                    stack.append(l_stack.pop(0)) 
+                if len(r_stack) > 0:
+                    stack.append(r_stack.pop(0))
+    
+            pxl_loc[i] = int(np.median(stack))
+            top_pixels[int(pxl_loc[i])][i] = 255
 
-        while len(stack) < x and (l_stack or r_stack):
-            if len(l_stack) > 0:
-                stack.append(l_stack.pop(0)) 
-            if len(r_stack) > 0:
-                stack.append(r_stack.pop(0))
-
-        pxl_loc[i] = int(np.median(stack))
-        top_pixels[int(pxl_loc[i])][i] = 255
-
+except:
+    print("MIXUP!")
+    pass
 
 
 # Do the poly fit!
