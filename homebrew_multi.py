@@ -84,10 +84,17 @@ def draw_contour(x,y,c,rgb,im):
                 im[r+y][s+x][2] = rgb[2]
 
 
+    
+# F-ed up particles: 3,17,18,23,24,27,31,44,45!
+#   51,53,55,56,63,70,71,76,80,82,88,89,90,93,
+#   94,98,100,101,102,104,106,108,109,110,114,
+#   116,117     +1?
+
 
 itr = 0
+#itr = 110
 
-#for c in circles[0][:3]:
+#for c in circles[0][itr:]:
 for c in circles[0]:
     
     c_crop, x1, y1 = get_cropped_circle(c[0], c[1], c[2], 1.1, binim)
@@ -105,16 +112,9 @@ for c in circles[0]:
     polar_image = polar_image.astype(np.uint8)
 
     
+    
     # Rotate image!
-    # get image height, width
-    (h, w) = polar_image.shape[:2]
-    # calculate the center of the image
-    center = (w / 2, h / 2)
-    
-    scale = 1.0
-    
-    M = cv2.getRotationMatrix2D(center, -90, scale)
-    polar_image90 = cv2.warpAffine(polar_image, M, (h, w))
+    polar_image90 = np.rot90(polar_image, k=3, axes=(0, 1))
     
     
     
@@ -169,8 +169,18 @@ for c in circles[0]:
         print("along with probably a lot of other crap")
 
 
+
+    # align ends a little better together
+    n = np.ones(crop_len)
+    n[0] = 100
+    n[-1] = 100
+    nu_pt = int((pxl_loc[0]+pxl_loc[-1])/2)
+    pxl_loc[0] = nu_pt
+    pxl_loc[-1] = nu_pt
+
+
     # Do the poly fit!
-    z = np.polyfit(range(crop_len), pxl_loc, 4) # 3rd or 4th order?
+    z = np.polyfit(range(crop_len), pxl_loc, 4, w=np.sqrt(n)) # 3rd or 4th order?
     f = np.poly1d(z)
     
     
@@ -186,12 +196,7 @@ for c in circles[0]:
     
     
     # Rotate image!
-    # get image height, width
-    (h, w) = f_im.shape[:2]
-    # calculate the center of the image
-    center = (w / 2, h / 2)
-    M = cv2.getRotationMatrix2D(center, 90, scale)
-    f_im_90 = cv2.warpAffine(f_im, M, (h, w))
+    f_im_90 = np.rot90(f_im, k=1, axes=(0, 1))
     
     
     
@@ -215,10 +220,7 @@ for c in circles[0]:
 
     r_rgb = [rnd.randint(0, 256),rnd.randint(0, 256),rnd.randint(0, 256)]
 
-    draw_contour(x1,y1,cartisian_image,r_rgb,im1_final)
-    
-    itr += 1
-    
+    draw_contour(x1,y1,cartisian_image,[0,0,255],im1_final)
     
 #    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
 #    ax.imshow(cartisian_image)
@@ -238,8 +240,21 @@ for c in circles[0]:
 #    
 #    fig.tight_layout()
 #    plt.show()
-        
+
     
+#    fig, axes = plt.subplots(1, 2, figsize=(15, 15))
+#    ax = axes.ravel()
+#    
+#    ax[0].imshow(c_crop, cmap=plt.cm.gray)
+#    ax[1].imshow(c_crop + cartisian_image*0.6)
+#    
+#    fig.tight_layout()
+#    plt.show()
+#    
+#    print("circle no.",itr)
+#    
+    itr += 1
+
 
 
 fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
