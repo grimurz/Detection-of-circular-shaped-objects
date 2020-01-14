@@ -67,15 +67,18 @@ for label in np.unique(labels):
 
 	# ellipse attempt
 	(x,y),(MA,ma),angle = cv2.fitEllipseAMS(c)
-	cv2.ellipse(image,(int(x),int(y)),(int(MA/2),int(ma/2)),int(angle),0,360,(0,255,0),2)
+	cv2.ellipse(image,(int(round(x)),int(round(y))),(int(round(MA/2)),int(round(ma/2))),int(round(angle)),0,360,(0,255,0),2)
 	#cv2.putText(image, "#{}".format(label), (int(x) - 10, int(y)),
 	#	cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
 
 	# cv2.circle(img, center, radius, color[, thickness[, lineType[, shift]]]) → Non
 	# cv2.ellipse(img, center, axes, angle, startAngle, endAngle, color[, thickness[, lineType[, shift]]]) → None
-	#cv2.fitEllipse(image)
-	#cv2.ellipse(image, (int(x), int(y)), int(r), (0, 255, 0), 2)
-
+	
 # show the output image
-cv2.imshow("Output", image)
-cv2.waitKey(0)
+#cv2.imshow("Output", image)
+#cv2.waitKey(0)
+
+# save image
+status = cv2.imwrite('testresult.png',image)
+ 
+print("Image written to file-system : ",status)
