@@ -1,4 +1,9 @@
 
+from skimage.feature import peak_local_max
+from skimage.morphology import watershed
+from scipy import ndimage
+import imutils
+
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -7,8 +12,7 @@ import cv2
 # Fetch them images and find edges
 im1 = cv2.imread('316.png')
 im1gray = cv2.imread('316.png',0) # 0 = grayscale
-edges = cv2.Canny(im1gray,240,255)
-
+edges = cv2.Canny(im1gray,235,255,L2gradient=True)
 
 
 # Find connected components and get rid of all smaller than 30
@@ -24,21 +28,66 @@ binim = result # binary image
 
 
 
-# Get coordinates and radii of all circles using Hough
-circles = cv2.HoughCircles(binim,cv2.HOUGH_GRADIENT,1.05,35,
-                            param1=50,param2=23,minRadius=5,maxRadius=90)
+shifted = cv2.pyrMeanShiftFiltering(im1, 21, 51)
+#cv2.imshow("Input", im1)
+
+# convert the mean shift image to grayscale, then apply
+# Otsu's thresholding
+gray = cv2.cvtColor(shifted, cv2.COLOR_BGR2GRAY)
+thresh = cv2.threshold(gray, 0, 255,
+	cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+thresh = cv2.copyMakeBorder(thresh,1,1,1,1,cv2.BORDER_CONSTANT,0)
+#cv2.imshow("Thresh", thresh)
+
+# compute the exact Euclidean distance from every binary
+# pixel to the nearest zero pixel, then find peaks in this
+# distance map
+D = ndimage.distance_transform_edt(thresh)
+localMax = peak_local_max(D, indices=False, min_distance=20,
+	labels=thresh)
+
+# perform a connected component analysis on the local peaks,
+# using 8-connectivity, then appy the Watershed algorithm
+markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
+labels = watershed(-D, markers, mask=thresh)
+print("[INFO] {} unique segments found".format(len(np.unique(labels)) - 1))
 
 
-# Get rid of 10% worst peaks, located at the end of array
-circles = circles[:,:-int(len(circles[0])*0.1)]
+circles = np.empty((0,3), int)
+
+
+# loop over the unique labels returned by the Watershed
+# algorithm
+for label in np.unique(labels):
+	# if the label is zero, we are examining the 'background'
+	# so simply ignore it
+	if label == 0:
+		continue
+
+	# otherwise, allocate memory for the label region and draw
+	# it on the mask
+	mask = np.zeros(thresh.shape, dtype="uint8")
+	mask[labels == label] = 255
+
+	# detect contours in the mask and grab the largest one
+	cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+		cv2.CHAIN_APPROX_SIMPLE)
+	cnts = imutils.grab_contours(cnts)
+	c = max(cnts, key=cv2.contourArea)
+
+	# draw a circle enclosing the object
+	((x, y), r) = cv2.minEnclosingCircle(c)
+	cv2.circle(im1, (int(x), int(y)), int(r), (0, 255, 0), 2)
+	cv2.putText(im1, "#{}".format(label), (int(x) - 10, int(y)),
+		cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+	circles = np.append(circles, np.array([[int(x),int(y),int(r)]]), axis=0)
 
 
 
-# Draw them circles
-circles = np.uint16(np.around(circles))
-for i in circles[0,:]:
-    cv2.circle(im1,(i[0],i[1]),i[2],(0,255,0),2) # outer circle
-    cv2.circle(im1,(i[0],i[1]),2,(0,0,255),3) # center of the circle
+#binim = thresh
+#binim[binim > 0] = 255
+#binim = cv2.bitwise_not(binim)
 
 
 
@@ -54,10 +103,21 @@ def get_cropped_circle(x,y,r,rp,im):
     y1 = int(y-r*rp)
     y2 = int(y+r*rp)
     
+    #avoid edges
     x1 = 0 if x1 < 0 else x1
     x2 = im.shape[:2][1] if x2 > im.shape[:2][1] else x2
     y1 = 0 if y1 < 0 else y1
     y2 = im.shape[:2][0] if y2 > im.shape[:2][0] else y2
+
+#    print(x1,x2)
+#
+#    # improve center on edges
+#    x1 = x1 + int((x2-x1)*(rp-1)) if x2 == im.shape[:2][1] else x1
+#    x2 = x2 - int(x2*(rp-1)) if x1 == 0 else x2
+#    y1 = y1 + int((y2-y1)*(rp-1)) if y2 == im.shape[:2][0] else y1
+#    y2 = y2 - int(y2*(rp-1)) if y1 == 0 else y2
+#
+#    print(x1,x2)
 
     print('x: ', x)
     print('y: ', y)
@@ -69,17 +129,15 @@ def get_cropped_circle(x,y,r,rp,im):
 ##### experimental stuff below #####
 
 
-# edge: 5(?),18!
-# overlapping top: 
-# overlapping bottom:  
-# overlapping unclear:  
-# clean:  
-# deformed: 21,27,29,35,40,79
-# double trouble: 21 & 35
-# junk inside: 3,17,23,24,27,31
-# interesting: 10,14,16,21,29,34!
-i = 35
-crop_im = get_cropped_circle(circles[0][i][0],circles[0][i][1],circles[0][i][2],1.1,binim)
+# edge: 1,2,3
+# clean:
+# background: 1,17
+# deformed: 2,3,10,14
+# double trouble:
+# junk inside: 11,13
+# interesting: 6,7,8,9,16,20
+i = 20
+crop_im = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,binim)
 
 
 
@@ -155,7 +213,6 @@ except:
     pass
 
 
-
 # align ends a little better together
 n = np.ones(crop_len)
 n[0] = 100
@@ -226,7 +283,7 @@ ax.imshow(im1)
 plt.show()
 
 #fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(15, 15))
-#ax.imshow(edges, cmap=plt.cm.gray)
+#ax.imshow(im1gray, cmap=plt.cm.gray)
 #plt.show()
 
 fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(15, 15))
@@ -253,67 +310,3 @@ plt.show()
 fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
 ax.imshow(crop_im2)
 plt.show()
-
-
-#t = range(crop_len)
-#
-#ax2 = plt.subplot(212)
-#ax2.axis([0, top_pixels.shape[1], top_pixels.shape[0], 0])
-#ax2.plot(t, f(t))
-#plt.show()
-
-
-## Hand picked circles:
-
-#im1a = im1[50:250, 300:500]
-#im4a = binim[50:250, 300:500]
-#
-#im1b = im1[150:350, 800:1000]
-#im4b = binim[150:350, 800:1000]
-#
-#im1c = im1[350:550, 550:750]
-#im4c = binim[350:550, 550:750]
-#
-#im1d = im1[0:200, 525:725]
-#im4d = binim[0:200, 525:725]
-#
-#
-#fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-#ax = axes.ravel()
-#
-#ax[0].imshow(im1a)
-#ax[1].imshow(im4a, cmap=plt.cm.gray)
-#
-#fig.tight_layout()
-#plt.show()
-#
-#
-#fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-#ax = axes.ravel()
-#
-#ax[0].imshow(im1b)
-#ax[1].imshow(im4b, cmap=plt.cm.gray)
-#
-#fig.tight_layout()
-#plt.show()
-#
-#
-#fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-#ax = axes.ravel()
-#
-#ax[0].imshow(im1c)
-#ax[1].imshow(im4c, cmap=plt.cm.gray)
-#
-#fig.tight_layout()
-#plt.show()
-#
-#
-#fig, axes = plt.subplots(1, 2, figsize=(12, 6))
-#ax = axes.ravel()
-#
-#ax[0].imshow(im1d)
-#ax[1].imshow(im4d, cmap=plt.cm.gray)
-#
-#fig.tight_layout()
-#plt.show()
-#

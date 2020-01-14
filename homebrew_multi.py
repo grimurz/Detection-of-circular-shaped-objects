@@ -1,4 +1,9 @@
 
+from skimage.feature import peak_local_max
+from skimage.morphology import watershed
+from scipy import ndimage
+import imutils
+
 import numpy as np
 import matplotlib.pyplot as plt
 import random as rnd
@@ -9,7 +14,7 @@ import cv2
 im1 = cv2.imread('316.png')
 im1_final = cv2.imread('316.png')
 im1gray = cv2.imread('316.png',0) # 0 = grayscale
-edges = cv2.Canny(im1gray,240,255)
+edges = cv2.Canny(im1gray,235,255,L2gradient=True)
 
 
 
@@ -26,22 +31,73 @@ binim = result # binary image
 
 
 
-# Get coordinates and radii of all circles using Hough
-circles = cv2.HoughCircles(binim,cv2.HOUGH_GRADIENT,1.05,35,
-                            param1=50,param2=23,minRadius=5,maxRadius=90)
+
+shifted = cv2.pyrMeanShiftFiltering(im1, 21, 51)
+#cv2.imshow("Input", im1)
+
+# convert the mean shift image to grayscale, then apply
+# Otsu's thresholding
+gray = cv2.cvtColor(shifted, cv2.COLOR_BGR2GRAY)
+thresh = cv2.threshold(gray, 0, 255,
+	cv2.THRESH_BINARY | cv2.THRESH_OTSU)[1]
+thresh = cv2.copyMakeBorder(thresh,1,1,1,1,cv2.BORDER_CONSTANT,0)
+#cv2.imshow("Thresh", thresh)
+
+# compute the exact Euclidean distance from every binary
+# pixel to the nearest zero pixel, then find peaks in this
+# distance map
+D = ndimage.distance_transform_edt(thresh)
+localMax = peak_local_max(D, indices=False, min_distance=20,
+	labels=thresh)
+
+# perform a connected component analysis on the local peaks,
+# using 8-connectivity, then appy the Watershed algorithm
+markers = ndimage.label(localMax, structure=np.ones((3, 3)))[0]
+labels = watershed(-D, markers, mask=thresh)
+print("[INFO] {} unique segments found".format(len(np.unique(labels)) - 1))
 
 
-# Get rid of 10% worst peaks, located at the end of array
-circles = circles[:,:-int(len(circles[0])*0.1)]
+circles = np.empty((0,3), int)
+
+
+# loop over the unique labels returned by the Watershed
+# algorithm
+for label in np.unique(labels):
+	# if the label is zero, we are examining the 'background'
+	# so simply ignore it
+	if label == 0:
+		continue
+
+	# otherwise, allocate memory for the label region and draw
+	# it on the mask
+	mask = np.zeros(thresh.shape, dtype="uint8")
+	mask[labels == label] = 255
+
+	# detect contours in the mask and grab the largest one
+	cnts = cv2.findContours(mask.copy(), cv2.RETR_EXTERNAL,
+		cv2.CHAIN_APPROX_SIMPLE)
+	cnts = imutils.grab_contours(cnts)
+	c = max(cnts, key=cv2.contourArea)
+
+	# draw a circle enclosing the object
+	((x, y), r) = cv2.minEnclosingCircle(c)
+	cv2.circle(im1, (int(x), int(y)), int(r), (0, 255, 0), 2)
+	cv2.putText(im1, "#{}".format(label), (int(x) - 10, int(y)),
+		cv2.FONT_HERSHEY_SIMPLEX, 0.6, (0, 0, 255), 2)
+
+	circles = np.append(circles, np.array([[int(x),int(y),int(r)]]), axis=0)
 
 
 
-# Draw them circles
-circles = np.uint16(np.around(circles))
-for i in circles[0,:]:
-    cv2.circle(im1,(i[0],i[1]),i[2],(0,255,0),2) # outer circle
-    cv2.circle(im1,(i[0],i[1]),2,(0,0,255),3) # center of the circle
-
+#binim = thresh
+#binim[binim > 0] = 255
+#binim = cv2.bitwise_not(binim)
+#
+#binim = np.delete(binim, 0, axis=1)
+#binim = np.delete(binim, 0, axis=0)
+#binim = np.delete(binim, binim.shape[1]-1, axis=1)
+#binim = np.delete(binim, binim.shape[0]-1, axis=0)
+    
 
 
 # x and y: coordinates of circle
@@ -82,20 +138,12 @@ def draw_contour(x,y,c,rgb,im):
                 im[r+y][s+x][0] = rgb[0]
                 im[r+y][s+x][1] = rgb[1]
                 im[r+y][s+x][2] = rgb[2]
-
-
-    
-# F-ed up particles: 3,17,18,23,24,27,31,44,45!
-#   51,53,55,56,63,70,71,76,80,82,88,89,90,93,
-#   94,98,100,101,102,104,106,108,109,110,114,
-#   116,117     +1?
+                
 
 
 itr = 0
-#itr = 110
 
-#for c in circles[0][itr:]:
-for c in circles[0]:
+for c in circles:
     
     c_crop, x1, y1 = get_cropped_circle(c[0], c[1], c[2], 1.1, binim)
 
@@ -166,7 +214,6 @@ for c in circles[0]:
     except:
         print("##### ATTENTION ######")
         print("circle number", itr, "needs to be looked at")
-        print("along with probably a lot of other crap")
 
 
 
@@ -182,8 +229,8 @@ for c in circles[0]:
     # Do the poly fit!
     z = np.polyfit(range(crop_len), pxl_loc, 4, w=np.sqrt(n)) # 3rd or 4th order?
     f = np.poly1d(z)
-    
-    
+
+
     
     # Add polyfit to top_pixels
     f_pts = np.zeros(len(pxl_loc))
@@ -255,6 +302,10 @@ for c in circles[0]:
 #    
     itr += 1
 
+
+fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
+ax.imshow(im1)
+plt.show()
 
 
 fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
