@@ -175,8 +175,18 @@ for c in circles[0]:
         print("along with probably a lot of other crap")
 
 
+
+    # align ends a little better together
+    n = np.ones(crop_len)
+    n[0] = 100
+    n[-1] = 100
+    nu_pt = int((pxl_loc[0]+pxl_loc[-1])/2)
+    pxl_loc[0] = nu_pt
+    pxl_loc[-1] = nu_pt
+
+
     # Do the poly fit!
-    z = np.polyfit(range(crop_len), pxl_loc, 4) # 3rd or 4th order?
+    z = np.polyfit(range(crop_len), pxl_loc, 4, w=np.sqrt(n)) # 3rd or 4th order?
     f = np.poly1d(z)
     
     

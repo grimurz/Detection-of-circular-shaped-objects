@@ -98,7 +98,7 @@ def polyfit_with_fixed_points(n, x, y, xf, yf) :
 # double trouble: 21 & 35
 # junk inside: 3,17,23,24,27,31
 # interesting: 10,14,16,21,29,34!
-i = 35
+i = 1
 crop_im = get_cropped_circle(circles[0][i][0],circles[0][i][1],circles[0][i][2],1.1,binim)
 
 
@@ -183,22 +183,17 @@ except:
     pass
 
 
-
-#xf = np.array([])
-#yf = np.array([])
-#params = polyfit_with_fixed_points(4, range(crop_len), pxl_loc, xf, yf)
-#poly = np.polynomial.Polynomial(params)
-#
-#xx = np.linspace(0, 5, 5)
-#plt.plot(range(crop_len), pxl_loc, 'bo')
-#plt.plot(xf, yf, 'ro')
-#plt.plot(xx, poly(xx), 'go')
-#plt.show()
-
+# attempt at aligning ends together
+n = np.ones(crop_len)
+n[0] = 100
+n[-1] = 100
+nu_pt = int((pxl_loc[0]+pxl_loc[-1])/2)
+pxl_loc[0] = nu_pt
+pxl_loc[-1] = nu_pt
 
 
 # Do the poly fit!
-z = np.polyfit(range(crop_len), pxl_loc, 4) # 3rd or 4th order?
+z = np.polyfit(range(crop_len), pxl_loc, 4, w=np.sqrt(n)) # 3rd or 4th order?
 f = np.poly1d(z)
 
 
