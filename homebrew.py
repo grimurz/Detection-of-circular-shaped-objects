@@ -66,6 +66,26 @@ def get_cropped_circle(x,y,r,rp,im):
 
 
 
+# https://stackoverflow.com/questions/15191088/how-to-do-a-polynomial-fit-with-fixed-points/15196628#15196628
+def polyfit_with_fixed_points(n, x, y, xf, yf) :
+    mat = np.empty((n + 1 + len(xf),) * 2)
+    vec = np.empty((n + 1 + len(xf),))
+    x_n = x**np.arange(2 * n + 1)[:, None]
+    yx_n = np.sum(x_n[:n + 1] * y, axis=1)
+    x_n = np.sum(x_n, axis=1)
+    idx = np.arange(n + 1) + np.arange(n + 1)[:, None]
+    mat[:n + 1, :n + 1] = np.take(x_n, idx)
+    xf_n = xf**np.arange(n + 1)[:, None]
+    mat[:n + 1, n + 1:] = xf_n / 2
+    mat[n + 1:, :n + 1] = xf_n.T
+    mat[n + 1:, n + 1:] = 0
+    vec[:n + 1] = yx_n
+    vec[n + 1:] = yf
+    params = np.linalg.solve(mat, vec)
+    return params[:n + 1]
+
+
+
 ##### experimental stuff below #####
 
 
@@ -78,7 +98,7 @@ def get_cropped_circle(x,y,r,rp,im):
 # double trouble: 21 & 35
 # junk inside: 3,17,23,24,27,31
 # interesting: 10,14,16,21,29,34!
-i = 1
+i = 35
 crop_im = get_cropped_circle(circles[0][i][0],circles[0][i][1],circles[0][i][2],1.1,binim)
 
 
@@ -161,6 +181,20 @@ try:
 except:
     print("MIXUP!")
     pass
+
+
+
+#xf = np.array([])
+#yf = np.array([])
+#params = polyfit_with_fixed_points(4, range(crop_len), pxl_loc, xf, yf)
+#poly = np.polynomial.Polynomial(params)
+#
+#xx = np.linspace(0, 5, 5)
+#plt.plot(range(crop_len), pxl_loc, 'bo')
+#plt.plot(xf, yf, 'ro')
+#plt.plot(xx, poly(xx), 'go')
+#plt.show()
+
 
 
 # Do the poly fit!
