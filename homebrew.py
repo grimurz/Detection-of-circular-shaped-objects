@@ -78,7 +78,7 @@ def get_cropped_circle(x,y,r,rp,im):
 # double trouble: 21 & 35
 # junk inside: 3,17,23,24,27,31
 # interesting: 10,14,16,21,29,34!
-i = 1
+i = 35
 crop_im = get_cropped_circle(circles[0][i][0],circles[0][i][1],circles[0][i][2],1.1,binim)
 
 
@@ -97,15 +97,7 @@ polar_image = polar_image.astype(np.uint8)
 
 
 # Rotate image!
-# get image height, width
-(h, w) = polar_image.shape[:2]
-# calculate the center of the image
-center = (w / 2, h / 2)
-
-scale = 1.0
-
-M = cv2.getRotationMatrix2D(center, -90, scale)
-polar_image90 = cv2.warpAffine(polar_image, M, (h, w))
+polar_image90 = np.rot90(polar_image, k=3, axes=(0, 1))
 
 
 
@@ -180,12 +172,7 @@ for i,loc in enumerate(pxl_loc):
 
 
 # Rotate image!
-# get image height, width
-(h, w) = f_im.shape[:2]
-# calculate the center of the image
-center = (w / 2, h / 2)
-M = cv2.getRotationMatrix2D(center, 90, scale)
-f_im_90 = cv2.warpAffine(f_im, M, (h, w))
+f_im_90 = np.rot90(f_im, k=1, axes=(0, 1))
 
 
 
