@@ -131,12 +131,13 @@ def get_cropped_circle(x,y,r,rp,im):
 
 # edge: 1,2,3
 # clean:
-# background: 1,17
-# deformed: 2,3,10,14
+# background: 1,14,17
+# deformed: 2,3,6,10
 # double trouble:
-# junk inside: 11,13
-# interesting: 6,7,8,9,16,20
-i = 20
+# junk inside:
+# interesting: 7,8,13,16,20
+# circle: 5
+i = 3
 crop_im = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,binim)
 
 
