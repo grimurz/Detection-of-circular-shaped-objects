@@ -7,13 +7,16 @@ import imutils
 import random as rnd
 import numpy as np
 import matplotlib.pyplot as plt
+import random as rnd
 import cv2
 
 
 # Fetch them images and find edges
 im1 = cv2.imread('316.png')
+im1_final = cv2.imread('316.png')
 im1gray = cv2.imread('316.png',0) # 0 = grayscale
 edges = cv2.Canny(im1gray,235,255,L2gradient=True)
+
 
 
 # Find connected components and get rid of all smaller than 30
@@ -26,6 +29,7 @@ for i in range(0, nlabels - 1):
         result[labels == i + 1] = 255
 
 binim = result # binary image
+
 
 
 
@@ -86,12 +90,22 @@ for label in np.unique(labels):
 
 
 
+#binim = thresh
+#binim[binim > 0] = 255
+#binim = cv2.bitwise_not(binim)
+#
+#binim = np.delete(binim, 0, axis=1)
+#binim = np.delete(binim, 0, axis=0)
+#binim = np.delete(binim, binim.shape[1]-1, axis=1)
+#binim = np.delete(binim, binim.shape[0]-1, axis=0)
+    
+
 
 # x and y: coordinates of circle
 # r: radius of circle
 # rp: relative padding for cropped image
 # im: image
-# returns: a cropped image of a circle
+# returns: a cropped image of a circle and coordinates of upper left corner
 def get_cropped_circle(x,y,r,rp,im):
 
     x1 = int(x-r*rp)
@@ -99,16 +113,32 @@ def get_cropped_circle(x,y,r,rp,im):
     y1 = int(y-r*rp)
     y2 = int(y+r*rp)
     
-    #avoid edges
     x1 = 0 if x1 < 0 else x1
     x2 = im.shape[:2][1] if x2 > im.shape[:2][1] else x2
     y1 = 0 if y1 < 0 else y1
     y2 = im.shape[:2][0] if y2 > im.shape[:2][0] else y2
 
-    print('x: ', x)
-    print('y: ', y)
+#    print('x: ', x)
+#    print('y: ', y)
+#    
+    return im[y1:y2, x1:x2], x1, y1
+
+
+
+
+# x and y: coordinates of upper left corner of contour image
+# c: contour image
+# rgb: color of contour [R,G,B]
+# im: image
+def draw_contour(x,y,c,rgb,im):
     
-    return im[y1:y2, x1:x2]
+    for r in range(c.shape[0]):
+        for s in range(c.shape[1]):
+
+            if c[r][s] > 0:
+                im[r+y][s+x][0] = rgb[0]
+                im[r+y][s+x][1] = rgb[1]
+                im[r+y][s+x][2] = rgb[2]
 
 
 
@@ -116,6 +146,8 @@ def ransac_ellipse(iter, srcimg, x, y):
 
     x_size = np.size(x)
     best_count = x_size
+    best_ellipse = None
+    
     for i in range(iter):
 
         base = srcimg.copy()
@@ -152,104 +184,101 @@ def ransac_ellipse(iter, srcimg, x, y):
 
     return best_ellipse
 
+             
+
+
+itr = 0
+
+for c in circles:
+    
+    c_crop, x1, y1 = get_cropped_circle(c[0], c[1], c[2], 1.1, binim)
+
+
+    # Do the wacky polar transformation!
+    #--- ensure image is of the type float ---
+    img = c_crop.astype(np.float32)
+    
+    #--- the following holds the square root of the sum of squares of the image dimensions ---
+    #--- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
+    value = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+    
+    polar_image = cv2.linearPolar(img,(img.shape[0]/2, img.shape[1]/2), value, cv2.WARP_FILL_OUTLIERS)
+    polar_image = polar_image.astype(np.uint8)
+
+    
+    
+    # Get leftmost pixel from edge!
+    top_pixels = np.zeros(polar_image.shape)
+    crop_hgt = polar_image.shape[0]
+    for i in range(crop_hgt):
+        for j,pxl in enumerate(polar_image[i,:]):
+            if pxl == 255:
+                top_pixels[i][j] = 255
+                break
+
+    
+    
+    # Polar to cartisian
+    #img = f_im_90.astype(np.float32)
+    img = c_crop.astype(np.float32)
+    Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+    cartisian_image = cv2.linearPolar(top_pixels, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
 
 
 
-##### experimental stuff below #####
+    # Run the RANSAC
+    y, x = np.where(cartisian_image > 0)
+    ellipse = ransac_ellipse(100000,cartisian_image,x,y)
+
+    nu_crop = np.zeros(c_crop.shape)
+    el_contour = cv2.ellipse(nu_crop,ellipse,(255,255,255),2)
+
+    r_rgb = [rnd.randint(50, 150),rnd.randint(0, 100),rnd.randint(250, 250)]
+
+#    draw_contour(x1,y1,cartisian_image,[0,0,255],im1_final)
+    draw_contour(x1,y1,el_contour,r_rgb,im1_final)
+    
+    
+    
+#    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
+#    ax.imshow(cartisian_image)
+#    plt.show()
+#
+#    
+#    fig, axes = plt.subplots(3, 2, figsize=(15, 15))
+#    ax = axes.ravel()
+#    
+#    ax[0].imshow(c_crop, cmap=plt.cm.gray)
+#    ax[1].imshow(polar_image, cmap=plt.cm.gray)
+#    ax[2].imshow(polar_image90, cmap=plt.cm.gray)
+#    #ax[3].imshow(top_pixels, cmap=plt.cm.gray)
+#    ax[3].imshow(top_pixels)
+#    ax[4].imshow(f_im_90, cmap=plt.cm.gray)
+#    ax[5].imshow(cartisian_image, cmap=plt.cm.gray)
+#    
+#    fig.tight_layout()
+#    plt.show()
+
+    
+#    fig, axes = plt.subplots(1, 2, figsize=(15, 15))
+#    ax = axes.ravel()
+#    
+#    ax[0].imshow(c_crop, cmap=plt.cm.gray)
+#    ax[1].imshow(c_crop + cartisian_image*0.6)
+#    
+#    fig.tight_layout()
+#    plt.show()
+#    
+#    print("circle no.",itr)
+#    
+    itr += 1
 
 
-# edge: 
-# clean:
-# background: 
-# deformed: 
-# double trouble:
-# junk inside:
-# interesting: 
-# circle: 
-i = 20
-crop_im = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,binim)
-
-
-
-# Do the wacky polar transformation!
-#--- ensure image is of the type float ---
-img = crop_im.astype(np.float32)
-
-#--- the following holds the square root of the sum of squares of the image dimensions ---
-#--- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
-value = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
-
-polar_image = cv2.linearPolar(img,(img.shape[0]/2, img.shape[1]/2), value, cv2.WARP_FILL_OUTLIERS)
-polar_image = polar_image.astype(np.uint8)
-
-
-
-# Get leftmost pixel from edge!
-top_pixels = np.zeros(polar_image.shape)
-crop_hgt = polar_image.shape[0]
-for i in range(crop_hgt):
-    for j,pxl in enumerate(polar_image[i,:]):
-        if pxl == 255:
-            top_pixels[i][j] = 255
-            break
-
-
-
-# Polar to cartisian
-img = crop_im.astype(np.float32)
-Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
-cartisian_image = cv2.linearPolar(top_pixels, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
-
-
-
-# Run the RANSAC
-y, x = np.where(cartisian_image > 0)
-ellipse2 = ransac_ellipse(100000,cartisian_image,x,y)
-
-
-
-# Add cartisian to original image
-crop_im2 = crop_im + cartisian_image*0.6
-
-
-
-
-# TODO: More elegant plot code
-
-fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(15, 15))
+fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
 ax.imshow(im1)
 plt.show()
 
-#fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(15, 15))
-#ax.imshow(im1gray, cmap=plt.cm.gray)
-#plt.show()
 
-fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(15, 15))
-ax.imshow(binim, cmap=plt.cm.gray)
+fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(16, 16))
+ax.imshow(im1_final)
 plt.show()
-
-
-
-fig, axes = plt.subplots(2, 2, figsize=(12, 12))
-ax = axes.ravel()
-
-ax[0].imshow(crop_im, cmap=plt.cm.gray)
-ax[1].imshow(polar_image, cmap=plt.cm.gray)
-ax[2].imshow(top_pixels, cmap=plt.cm.gray)
-#ax[3].imshow(cartisian_image, cmap=plt.cm.gray)
-ax[3].imshow(cartisian_image)
-
-fig.tight_layout()
-plt.show()
-
-
-fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
-ax.imshow(crop_im2)
-plt.show()
-
-
-
-disp = cv2.cvtColor(crop_im,cv2.COLOR_GRAY2BGR)
-cv2.ellipse(disp,ellipse2,(0,0,255),1)
-cv2.imshow("result",disp)
-cv2.waitKey(0)
