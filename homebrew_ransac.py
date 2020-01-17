@@ -164,9 +164,9 @@ def ransac_ellipse(iter, srcimg, x, y):
 # deformed: 
 # double trouble:
 # junk inside:
-# interesting: 
+# interesting: 10
 # circle: 
-i = 20
+i = 3
 crop_im = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,binim)
 
 
@@ -177,9 +177,9 @@ img = crop_im.astype(np.float32)
 
 #--- the following holds the square root of the sum of squares of the image dimensions ---
 #--- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
-value = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+value = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
 
-polar_image = cv2.linearPolar(img,(img.shape[0]/2, img.shape[1]/2), value, cv2.WARP_FILL_OUTLIERS)
+polar_image = cv2.linearPolar(img,(img.shape[1]/2, img.shape[0]/2), value, cv2.WARP_FILL_OUTLIERS)
 polar_image = polar_image.astype(np.uint8)
 
 
@@ -195,21 +195,30 @@ for i in range(crop_hgt):
 
 
 
-# Polar to cartisian
+# Polar to cartesian
 img = crop_im.astype(np.float32)
-Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
-cartisian_image = cv2.linearPolar(top_pixels, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
+Mvalue = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
+cartesian_image = cv2.linearPolar(top_pixels, (img.shape[1]/2, img.shape[0]/2),Mvalue, cv2.WARP_INVERSE_MAP)
 
 
 
 # Run the RANSAC
-y, x = np.where(cartisian_image > 0)
-ellipse2 = ransac_ellipse(100000,cartisian_image,x,y)
+y, x = np.where(cartesian_image > 0)
+ellipse = ransac_ellipse(10000,cartesian_image,x,y)
+
+nu_crop = np.zeros(crop_im.shape)
+el_contour = cv2.ellipse(nu_crop,ellipse,(255,255,255),2)
+
+
+#r_rgb = [rnd.randint(50, 150),rnd.randint(0, 100),rnd.randint(250, 250)]
+
+# draw_contour(x1,y1,cartesian_image,[0,0,255],im1_final)
+#draw_contour(x1,y1,el_contour,r_rgb,im1_final)
 
 
 
-# Add cartisian to original image
-crop_im2 = crop_im + cartisian_image*0.6
+# Add cartesian to original image
+crop_im2 = crop_im + el_contour*0.4
 
 
 
@@ -236,8 +245,8 @@ ax = axes.ravel()
 ax[0].imshow(crop_im, cmap=plt.cm.gray)
 ax[1].imshow(polar_image, cmap=plt.cm.gray)
 ax[2].imshow(top_pixels, cmap=plt.cm.gray)
-#ax[3].imshow(cartisian_image, cmap=plt.cm.gray)
-ax[3].imshow(cartisian_image)
+ax[3].imshow(cartesian_image, cmap=plt.cm.gray)
+#ax[3].imshow(cartesian_image)
 
 fig.tight_layout()
 plt.show()
@@ -247,9 +256,12 @@ fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
 ax.imshow(crop_im2)
 plt.show()
 
+fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(12, 12))
+ax.imshow(polar_image)
+plt.show()
 
 
-disp = cv2.cvtColor(crop_im,cv2.COLOR_GRAY2BGR)
-cv2.ellipse(disp,ellipse2,(0,0,255),1)
-cv2.imshow("result",disp)
-cv2.waitKey(0)
+#disp = cv2.cvtColor(crop_im,cv2.COLOR_GRAY2BGR)
+#cv2.ellipse(disp,ellipse2,(0,0,255),1)
+#cv2.imshow("result",disp)
+#cv2.waitKey(0)

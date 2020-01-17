@@ -154,9 +154,9 @@ for c in circles:
     
     #--- the following holds the square root of the sum of squares of the image dimensions ---
     #--- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
-    value = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+    value = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
     
-    polar_image = cv2.linearPolar(img,(img.shape[0]/2, img.shape[1]/2), value, cv2.WARP_FILL_OUTLIERS)
+    polar_image = cv2.linearPolar(img,(img.shape[1]/2, img.shape[0]/2), value, cv2.WARP_FILL_OUTLIERS)
     polar_image = polar_image.astype(np.uint8)
 
     
@@ -256,12 +256,11 @@ for c in circles:
     
     
     
-    
     # Polar to cartisian
     #img = f_im_90.astype(np.float32)
     img = c_crop.astype(np.float32)
-    Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
-    cartisian_image = cv2.linearPolar(f_im_90, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
+    Mvalue = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
+    cartisian_image = cv2.linearPolar(f_im_90, (img.shape[1]/2, img.shape[0]/2),Mvalue, cv2.WARP_INVERSE_MAP)
     
 
 

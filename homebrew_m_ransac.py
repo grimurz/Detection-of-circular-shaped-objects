@@ -200,9 +200,9 @@ for c in circles:
     
     #--- the following holds the square root of the sum of squares of the image dimensions ---
     #--- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
-    value = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+    value = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
     
-    polar_image = cv2.linearPolar(img,(img.shape[0]/2, img.shape[1]/2), value, cv2.WARP_FILL_OUTLIERS)
+    polar_image = cv2.linearPolar(img,(img.shape[1]/2, img.shape[0]/2), value, cv2.WARP_FILL_OUTLIERS)
     polar_image = polar_image.astype(np.uint8)
 
     
@@ -218,30 +218,30 @@ for c in circles:
 
     
     
-    # Polar to cartisian
-    #img = f_im_90.astype(np.float32)
+    # Polar to cartesian
     img = c_crop.astype(np.float32)
-    Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
-    cartisian_image = cv2.linearPolar(top_pixels, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
+    Mvalue = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
+    cartesian_image = cv2.linearPolar(top_pixels, (img.shape[1]/2, img.shape[0]/2),Mvalue, cv2.WARP_INVERSE_MAP)
 
 
 
     # Run the RANSAC
-    y, x = np.where(cartisian_image > 0)
-    ellipse = ransac_ellipse(100000,cartisian_image,x,y)
+    y, x = np.where(cartesian_image > 0)
+    ellipse = ransac_ellipse(500000,cartesian_image,x,y)
 
     nu_crop = np.zeros(c_crop.shape)
     el_contour = cv2.ellipse(nu_crop,ellipse,(255,255,255),2)
 
+
     r_rgb = [rnd.randint(50, 150),rnd.randint(0, 100),rnd.randint(250, 250)]
 
-#    draw_contour(x1,y1,cartisian_image,[0,0,255],im1_final)
+#    draw_contour(x1,y1,cartesian_image,[0,0,255],im1_final)
     draw_contour(x1,y1,el_contour,r_rgb,im1_final)
     
     
     
 #    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
-#    ax.imshow(cartisian_image)
+#    ax.imshow(cartesian_image)
 #    plt.show()
 #
 #    
@@ -254,7 +254,7 @@ for c in circles:
 #    #ax[3].imshow(top_pixels, cmap=plt.cm.gray)
 #    ax[3].imshow(top_pixels)
 #    ax[4].imshow(f_im_90, cmap=plt.cm.gray)
-#    ax[5].imshow(cartisian_image, cmap=plt.cm.gray)
+#    ax[5].imshow(cartesian_image, cmap=plt.cm.gray)
 #    
 #    fig.tight_layout()
 #    plt.show()
@@ -264,7 +264,7 @@ for c in circles:
 #    ax = axes.ravel()
 #    
 #    ax[0].imshow(c_crop, cmap=plt.cm.gray)
-#    ax[1].imshow(c_crop + cartisian_image*0.6)
+#    ax[1].imshow(c_crop + cartesian_image*0.6)
 #    
 #    fig.tight_layout()
 #    plt.show()

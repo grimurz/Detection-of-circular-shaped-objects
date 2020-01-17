@@ -133,34 +133,25 @@ img = crop_im.astype(np.float32)
 
 #--- the following holds the square root of the sum of squares of the image dimensions ---
 #--- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
-value = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+value = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
 
-polar_image = cv2.linearPolar(img,(img.shape[0]/2, img.shape[1]/2), value, cv2.WARP_FILL_OUTLIERS)
+polar_image = cv2.linearPolar(img,(img.shape[1]/2, img.shape[0]/2), value, cv2.WARP_FILL_OUTLIERS)
 polar_image = polar_image.astype(np.uint8)
 
 
-# MEAN START/FINISH!?
 
 
 # Get leftmost pixel from edge!
 top_pixels = np.zeros(polar_image.shape)
 crop_hgt = polar_image.shape[0]
-pxl_loc = np.zeros(crop_hgt) # gaps/zeros potential problem?
+#pxl_loc = np.zeros(crop_hgt) # gaps/zeros potential problem?
 
 for i in range(crop_hgt):
     for j,pxl in enumerate(polar_image[i,:]):
         if pxl == 255:
             top_pixels[i][j] = 255
-            pxl_loc[j] = i
+#            pxl_loc[j] = i
             break
-
-
-
-
-
-
-
-
 
 
 
@@ -173,8 +164,8 @@ f_im_90 = cv2.dilate(top_pixels,kernel,iterations = 1)
 # Polar to cartisian
 #img = f_im_90.astype(np.float32)
 img = crop_im.astype(np.float32)
-Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
-cartisian_image = cv2.linearPolar(f_im_90, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
+Mvalue = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
+cartisian_image = cv2.linearPolar(f_im_90, (img.shape[1]/2, img.shape[0]/2),Mvalue, cv2.WARP_INVERSE_MAP)
 
 
 

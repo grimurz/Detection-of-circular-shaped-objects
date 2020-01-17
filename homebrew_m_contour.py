@@ -154,9 +154,9 @@ for c in circles:
     
     #--- the following holds the square root of the sum of squares of the image dimensions ---
     #--- this is done so that the entire width/height of the original image is used to express the complete circular range of the resulting polar image ---
-    value = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
+    value = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
     
-    polar_image = cv2.linearPolar(img,(img.shape[0]/2, img.shape[1]/2), value, cv2.WARP_FILL_OUTLIERS)
+    polar_image = cv2.linearPolar(img,(img.shape[1]/2, img.shape[0]/2), value, cv2.WARP_FILL_OUTLIERS)
     polar_image = polar_image.astype(np.uint8)
 
     
@@ -178,69 +178,7 @@ for c in circles:
                 pxl_loc[i] = j
                 break
     
-    
-#    try:
-#        # Get rid of zeros, use median of x non-zero neighbour values
-#        for i in range(crop_len):
-#        
-#            if pxl_loc[i] == 0:
-#                
-#                stack = []
-#                l_stack = []
-#                r_stack = []
-#                x = 4
-#                
-#                left_itr = i-1
-#                while left_itr >= 0 and len(l_stack) < x:
-#                    if pxl_loc[left_itr] != 0:
-#                        l_stack.append(pxl_loc[left_itr])
-#                    left_itr -= 1
-#                
-#                right_itr = i+1
-#                while right_itr <= crop_len-1 and len(r_stack) < x:
-#                    if pxl_loc[right_itr] != 0:
-#                        r_stack.append(pxl_loc[right_itr])
-#                    right_itr += 1
-#        
-#                while len(stack) < x and (l_stack or r_stack):
-#                    if len(l_stack) > 0:
-#                        stack.append(l_stack.pop(0)) 
-#                    if len(r_stack) > 0:
-#                        stack.append(r_stack.pop(0))
-#        
-#                pxl_loc[i] = int(np.median(stack))
-#                top_pixels[int(pxl_loc[i])][i] = 255
-#
-#    except:
-#        print("##### ATTENTION ######")
-#        print("circle number", itr, "needs to be looked at")
-#
-#
-#
-#    # align ends a little better together
-#    n = np.ones(crop_len)
-#    n[0] = 100
-#    n[-1] = 100
-#    nu_pt = int((pxl_loc[0]+pxl_loc[-1])/2)
-#    pxl_loc[0] = nu_pt
-#    pxl_loc[-1] = nu_pt
-#
-#
-#    # Do the poly fit!
-#    z = np.polyfit(range(crop_len), pxl_loc, 4, w=np.sqrt(n)) # 3rd or 4th order?
-#    f = np.poly1d(z)
-#
-#
-#    
-#    # Add polyfit to top_pixels
-#    f_pts = np.zeros(len(pxl_loc))
-#    f_im = np.zeros(polar_image90.shape, np.uint8)
-#    for i,loc in enumerate(pxl_loc):
-#        top_pixels[int(f(i))][i] = 120
-#        f_pts[i] = int(f(i))
-#        f_im[int(f(i))][i] = 255
-    
-    
+
     
     # Rotate image!
     f_im_90 = np.rot90(top_pixels, k=1, axes=(0, 1))
@@ -261,8 +199,8 @@ for c in circles:
     # Polar to cartisian
     #img = f_im_90.astype(np.float32)
     img = c_crop.astype(np.float32)
-    Mvalue = np.sqrt(((img.shape[0]/2.0)**2.0)+((img.shape[1]/2.0)**2.0))
-    cartisian_image = cv2.linearPolar(f_im_90, (img.shape[0]/2, img.shape[1]/2),Mvalue, cv2.WARP_INVERSE_MAP)
+    Mvalue = np.sqrt(((img.shape[1]/2.0)**2.0)+((img.shape[0]/2.0)**2.0))
+    cartisian_image = cv2.linearPolar(f_im_90, (img.shape[1]/2, img.shape[0]/2),Mvalue, cv2.WARP_INVERSE_MAP)
     
 
 
