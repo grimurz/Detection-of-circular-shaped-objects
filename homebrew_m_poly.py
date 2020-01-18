@@ -264,7 +264,7 @@ for c in circles:
     
 
 
-    r_rgb = [rnd.randint(0, 256),rnd.randint(0, 256),rnd.randint(0, 256)]
+    r_rgb = [rnd.randint(0, 255),rnd.randint(0, 255),rnd.randint(0, 255)]
 
     draw_contour(x1,y1,cartisian_image,[0,0,255],im1_final)
     

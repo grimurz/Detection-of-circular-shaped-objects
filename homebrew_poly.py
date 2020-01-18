@@ -4,6 +4,7 @@ from skimage.morphology import watershed
 from scipy import ndimage
 import imutils
 
+import random as rnd
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -11,6 +12,7 @@ import cv2
 
 # Fetch them images and find edges
 im1 = cv2.imread('316.png')
+im2 = im1.copy()
 im1gray = cv2.imread('316.png',0) # 0 = grayscale
 edges = cv2.Canny(im1gray,235,255,L2gradient=True)
 
@@ -109,36 +111,34 @@ def get_cropped_circle(x,y,r,rp,im):
     y1 = 0 if y1 < 0 else y1
     y2 = im.shape[:2][0] if y2 > im.shape[:2][0] else y2
 
-#    print(x1,x2)
-#
-#    # improve center on edges
-#    x1 = x1 + int((x2-x1)*(rp-1)) if x2 == im.shape[:2][1] else x1
-#    x2 = x2 - int(x2*(rp-1)) if x1 == 0 else x2
-#    y1 = y1 + int((y2-y1)*(rp-1)) if y2 == im.shape[:2][0] else y1
-#    y2 = y2 - int(y2*(rp-1)) if y1 == 0 else y2
-#
-#    print(x1,x2)
+#    print('x: ', x)
+#    print('y: ', y)
 
-    print('x: ', x)
-    print('y: ', y)
-    
     return im[y1:y2, x1:x2]
 
 
 
-##### experimental stuff below #####
+# c: contour image
+# rgb: color of contour [R,G,B]
+# im: image
+def draw_contour(c,rgb,im):
+    
+    for r in range(c.shape[0]):
+        for s in range(c.shape[1]):
+
+            if c[r][s] > 0:
+                im[r][s][0] = rgb[0]
+                im[r][s][1] = rgb[1]
+                im[r][s][2] = rgb[2]
 
 
-# edge: 1,2,3
-# clean:
-# background: 1,14,17
-# deformed: 2,3,6,10
-# double trouble:
-# junk inside:
-# interesting: 7,8,13,16,20
-# circle: 5
-i = 3
+
+##### experimental stuff below ##### 7,9,13,20
+
+
+i = 20
 crop_im = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,binim)
+crop_im2 = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,im2)
 
 
 
@@ -214,6 +214,8 @@ except:
     pass
 
 
+
+
 # align ends a little better together
 n = np.ones(crop_len)
 n[0] = 100
@@ -221,7 +223,6 @@ n[-1] = 100
 nu_pt = int((pxl_loc[0]+pxl_loc[-1])/2)
 pxl_loc[0] = nu_pt
 pxl_loc[-1] = nu_pt
-
 
 
 
@@ -234,6 +235,7 @@ f = np.poly1d(z)
 # Add polyfit to top_pixels
 f_pts = np.zeros(len(pxl_loc))
 f_im = np.zeros(polar_image90.shape, np.uint8)
+tp2 = top_pixels.copy()
 for i,loc in enumerate(pxl_loc):
     top_pixels[int(f(i))][i] = 120
     f_pts[i] = int(f(i))
@@ -254,7 +256,6 @@ f_im_90 = cv2.dilate(f_im_90,kernel,iterations = 1)
 
 
 
-
 # Polar to cartisian
 #img = f_im_90.astype(np.float32)
 img = crop_im.astype(np.float32)
@@ -263,15 +264,9 @@ cartisian_image = cv2.linearPolar(f_im_90, (img.shape[1]/2, img.shape[0]/2),Mval
 
 
 
-## Dilate that shiz
-#kernel = cv2.getStructuringElement(cv2.MORPH_ELLIPSE,(3,3))
-#cartisian_image = cv2.dilate(cartisian_image,kernel,iterations = 1)
-
-
-
-# Add cartisian to original image
-crop_im2 = crop_im + cartisian_image*0.6
-
+# Draw the fit
+r_rgb = [rnd.randint(50, 150),rnd.randint(0, 100),rnd.randint(250, 250)]
+draw_contour(cartisian_image,r_rgb,crop_im2)
 
 
 
@@ -293,21 +288,26 @@ plt.show()
 
 
 
-fig, axes = plt.subplots(3, 2, figsize=(15, 15))
+fig, axes = plt.subplots(2, 2, figsize=(16, 14))
 ax = axes.ravel()
 
 ax[0].imshow(crop_im, cmap=plt.cm.gray)
 ax[1].imshow(polar_image, cmap=plt.cm.gray)
 ax[2].imshow(polar_image90, cmap=plt.cm.gray)
-#ax[3].imshow(top_pixels, cmap=plt.cm.gray)
-ax[3].imshow(top_pixels)
-ax[4].imshow(f_im_90, cmap=plt.cm.gray)
-ax[5].imshow(cartisian_image, cmap=plt.cm.gray)
+ax[3].imshow(tp2, cmap=plt.cm.gray)
 
 fig.tight_layout()
 plt.show()
 
 
-fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
-ax.imshow(crop_im2)
+
+fig, axes = plt.subplots(2, 2, figsize=(16, 14))
+ax = axes.ravel()
+
+ax[0].imshow(top_pixels)
+ax[1].imshow(f_im_90, cmap=plt.cm.gray)
+ax[2].imshow(cartisian_image, cmap=plt.cm.gray)
+ax[3].imshow(crop_im2)
+
+fig.tight_layout()
 plt.show()

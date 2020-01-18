@@ -4,6 +4,7 @@ from skimage.morphology import watershed
 from scipy import ndimage
 import imutils
 
+import random as rnd
 import numpy as np
 import matplotlib.pyplot as plt
 import cv2
@@ -11,6 +12,7 @@ import cv2
 
 # Fetch them images and find edges
 im1 = cv2.imread('316.png')
+im2 = im1.copy()
 im1gray = cv2.imread('316.png',0) # 0 = grayscale
 edges = cv2.Canny(im1gray,235,255,L2gradient=True)
 
@@ -104,27 +106,35 @@ def get_cropped_circle(x,y,r,rp,im):
     y1 = 0 if y1 < 0 else y1
     y2 = im.shape[:2][0] if y2 > im.shape[:2][0] else y2
 
-    print('x: ', x)
-    print('y: ', y)
+#    print('x: ', x)
+#    print('y: ', y)
     
     return im[y1:y2, x1:x2]
 
 
 
-##### experimental stuff below #####
+# c: contour image
+# rgb: color of contour [R,G,B]
+# im: image
+def draw_contour(c,rgb,im):
+    
+    for r in range(c.shape[0]):
+        for s in range(c.shape[1]):
+
+            if c[r][s] > 0:
+                im[r][s][0] = rgb[0]
+                im[r][s][1] = rgb[1]
+                im[r][s][2] = rgb[2]
 
 
-# edge: 
-# clean:
-# background: 
-# deformed: 
-# double trouble:
-# junk inside:
-# interesting: 
-# circle: 
-i = 16
+
+##### experimental stuff below ##### 32,40,42,44,54,64
+
+
+
+i = 32
 crop_im = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,binim)
-
+crop_im2 = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,im2)
 
 
 # Do the wacky polar transformation!
@@ -169,9 +179,9 @@ cartisian_image = cv2.linearPolar(f_im_90, (img.shape[1]/2, img.shape[0]/2),Mval
 
 
 
-# Add cartisian to original image
-crop_im2 = crop_im + cartisian_image*0.6
-
+# Draw the fit
+r_rgb = [rnd.randint(50, 150),rnd.randint(0, 100),rnd.randint(250, 250)]
+draw_contour(cartisian_image,r_rgb,crop_im2)
 
 
 

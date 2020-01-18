@@ -12,6 +12,7 @@ import cv2
 
 # Fetch them images and find edges
 im1 = cv2.imread('316.png')
+im2 = im1.copy()
 im1gray = cv2.imread('316.png',0) # 0 = grayscale
 edges = cv2.Canny(im1gray,235,255,L2gradient=True)
 
@@ -105,10 +106,25 @@ def get_cropped_circle(x,y,r,rp,im):
     y1 = 0 if y1 < 0 else y1
     y2 = im.shape[:2][0] if y2 > im.shape[:2][0] else y2
 
-    print('x: ', x)
-    print('y: ', y)
+#    print('x: ', x)
+#    print('y: ', y)
     
     return im[y1:y2, x1:x2]
+
+
+
+# c: contour image
+# rgb: color of contour [R,G,B]
+# im: image
+def draw_contour(c,rgb,im):
+    
+    for r in range(c.shape[0]):
+        for s in range(c.shape[1]):
+
+            if c[r][s] > 0:
+                im[r][s][0] = rgb[0]
+                im[r][s][1] = rgb[1]
+                im[r][s][2] = rgb[2]
 
 
 
@@ -158,16 +174,10 @@ def ransac_ellipse(iter, srcimg, x, y):
 ##### experimental stuff below #####
 
 
-# edge: 
-# clean:
-# background: 
-# deformed: 
-# double trouble:
-# junk inside:
-# interesting: 10
-# circle: 
+
 i = 3
 crop_im = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,binim)
+crop_im2 = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,im2)
 
 
 
@@ -210,15 +220,11 @@ nu_crop = np.zeros(crop_im.shape)
 el_contour = cv2.ellipse(nu_crop,ellipse,(255,255,255),2)
 
 
-#r_rgb = [rnd.randint(50, 150),rnd.randint(0, 100),rnd.randint(250, 250)]
 
-# draw_contour(x1,y1,cartesian_image,[0,0,255],im1_final)
-#draw_contour(x1,y1,el_contour,r_rgb,im1_final)
+# Draw the fit
+r_rgb = [rnd.randint(50, 150),rnd.randint(0, 100),rnd.randint(250, 250)]
+draw_contour(el_contour,r_rgb,crop_im2)
 
-
-
-# Add cartesian to original image
-crop_im2 = crop_im + el_contour*0.4
 
 
 
@@ -256,12 +262,3 @@ fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
 ax.imshow(crop_im2)
 plt.show()
 
-fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(12, 12))
-ax.imshow(polar_image)
-plt.show()
-
-
-#disp = cv2.cvtColor(crop_im,cv2.COLOR_GRAY2BGR)
-#cv2.ellipse(disp,ellipse2,(0,0,255),1)
-#cv2.imshow("result",disp)
-#cv2.waitKey(0)

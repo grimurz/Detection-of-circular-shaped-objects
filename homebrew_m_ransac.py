@@ -4,7 +4,6 @@ from skimage.morphology import watershed
 from scipy import ndimage
 import imutils
 
-import random as rnd
 import numpy as np
 import matplotlib.pyplot as plt
 import random as rnd
@@ -233,44 +232,16 @@ for c in circles:
     el_contour = cv2.ellipse(nu_crop,ellipse,(255,255,255),2)
 
 
-    r_rgb = [rnd.randint(50, 150),rnd.randint(0, 100),rnd.randint(250, 250)]
+    # Draw the ellipses
+    r = rnd.randint(255, 255)
+    g = rnd.randint(100, 200) #255 -  r
+    b = rnd.randint(0, 0)
+    r_rgb = [r,g,b]
 
-#    draw_contour(x1,y1,cartesian_image,[0,0,255],im1_final)
+#    draw_contour(x1,y1,el_contour,[0,0,255],im1_final)
     draw_contour(x1,y1,el_contour,r_rgb,im1_final)
     
-    
-    
-#    fig, ax = plt.subplots(ncols=1, nrows=1, figsize=(8, 8))
-#    ax.imshow(cartesian_image)
-#    plt.show()
-#
-#    
-#    fig, axes = plt.subplots(3, 2, figsize=(15, 15))
-#    ax = axes.ravel()
-#    
-#    ax[0].imshow(c_crop, cmap=plt.cm.gray)
-#    ax[1].imshow(polar_image, cmap=plt.cm.gray)
-#    ax[2].imshow(polar_image90, cmap=plt.cm.gray)
-#    #ax[3].imshow(top_pixels, cmap=plt.cm.gray)
-#    ax[3].imshow(top_pixels)
-#    ax[4].imshow(f_im_90, cmap=plt.cm.gray)
-#    ax[5].imshow(cartesian_image, cmap=plt.cm.gray)
-#    
-#    fig.tight_layout()
-#    plt.show()
 
-    
-#    fig, axes = plt.subplots(1, 2, figsize=(15, 15))
-#    ax = axes.ravel()
-#    
-#    ax[0].imshow(c_crop, cmap=plt.cm.gray)
-#    ax[1].imshow(c_crop + cartesian_image*0.6)
-#    
-#    fig.tight_layout()
-#    plt.show()
-#    
-#    print("circle no.",itr)
-#    
     itr += 1
 
 
