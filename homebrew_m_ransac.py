@@ -226,7 +226,7 @@ for c in circles:
 
     # Run the RANSAC
     y, x = np.where(cartesian_image > 0)
-    ellipse = ransac_ellipse(500000,cartesian_image,x,y)
+    ellipse = ransac_ellipse(10000,cartesian_image,x,y)
 
     nu_crop = np.zeros(c_crop.shape)
     el_contour = cv2.ellipse(nu_crop,ellipse,(255,255,255),2)

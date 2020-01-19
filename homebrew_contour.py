@@ -128,11 +128,11 @@ def draw_contour(c,rgb,im):
 
 
 
-##### experimental stuff below ##### 32,40,42,44,54,64
+##### experimental stuff below ##### 32,40,42,44,54,64,92
 
 
 
-i = 32
+i = 92
 crop_im = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,binim)
 crop_im2 = get_cropped_circle(circles[i][0],circles[i][1],circles[i][2],1.1,im2)
 
